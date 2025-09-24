@@ -22,21 +22,19 @@ const Login = (): ReactElement => {
   };
   const callbackURL = window.location.href + 'authenticate';
   const config: StytchLoginConfig = {
-    products: [Products.emailMagicLinks, Products.oauth],
+    products: [Products.emailMagicLinks, Products.passkeys],
     emailMagicLinksOptions: {
       loginRedirectURL: callbackURL,
       loginExpirationMinutes: 60,
       signupRedirectURL: callbackURL,
       signupExpirationMinutes: 60,
-    },
-    oauthOptions: {
-      providers: [{type: OAuthProviders.Google}],
-      loginRedirectURL: callbackURL,
-      signupRedirectURL: callbackURL,
     }
   };
+  const customStrings = {
+    "login.title": "Mikata Login"
+  }
 
-  return <StytchLogin config={config} styles={styles} />;
+  return <StytchLogin config={config} styles={styles} strings={customStrings} />;
 };
 
 export default Login;

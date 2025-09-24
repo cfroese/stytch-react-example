@@ -1,6 +1,46 @@
-import { useStytch, useStytchSession, useStytchUser } from "@stytch/react";
+import { useStytch, StytchPasskeyRegistration, useStytchSession, useStytchUser } from "@stytch/react";
 import { useState } from "react";
 import type { ReactElement } from "react";
+
+import {
+  AuthenticationFactor,
+  Products,
+  StytchEventType,
+} from "@stytch/core/public";
+
+const RegisterComponent = ({ numPasskeys }: { numPasskeys: number }) => {
+  const [displayRegisterPasskey, setDisplayRegisterPasskey] = useState(false);
+
+  return (
+    <>
+      {displayRegisterPasskey ? (
+        <StytchPasskeyRegistration
+          config={{ products: [Products.passkeys] }}
+          styles={{ container: { width:  "400px" } }}
+          callbacks={{
+            onEvent: ({ type, data }) => {
+              if (
+                type === StytchEventType.PasskeyDone ||
+                type === StytchEventType.PasskeySkip
+              ) {
+                // eslint-disable-next-line no-console
+                console.log("Passkey dismissed", data);
+                setDisplayRegisterPasskey(false);
+              }
+            },
+          }}
+        />
+      ) : (
+        <>
+            You have {numPasskeys} registered Passkey(s)
+          <button onClick={() => setDisplayRegisterPasskey(true)}>
+            Create a Passkey
+          </button>
+        </>
+      )}
+    </>
+  );
+};
 
 /*
 The Profile component is shown to a user that is logged in.
@@ -16,6 +56,17 @@ const Profile = (): ReactElement => {
   // Get the Stytch Session object if available
   const { session } = useStytchSession();
   const [apiMessage, setApiMessage] = useState<string>("");
+
+  const sessionHasWebauthnFactor = session?.authentication_factors?.some(
+    (factor: AuthenticationFactor) =>
+      factor.delivery_method === "webauthn_registration",
+  );
+  const sessionHasEmailFactor = session?.authentication_factors?.some(
+    (factor: AuthenticationFactor) => factor.delivery_method === "email",
+  );
+  const numPasskeys= user?.webauthn_registrations?.length || 0;
+  const shouldPromptWebauthn =
+          (sessionHasEmailFactor && !sessionHasWebauthnFactor) && numPasskeys > 0;
 
   const callApi = async () => {
     const res = await fetch("/api/resources", { credentials: "include" });
@@ -34,6 +85,12 @@ const Profile = (): ReactElement => {
       <pre className="code-block">
         <code>{JSON.stringify(user, null, 2)}</code>
       </pre>
+
+      {!shouldPromptWebauthn && (
+        <RegisterComponent
+          numPasskeys={numPasskeys}
+        />
+      )}
 
       <h2>Session object</h2>
       <pre className="code-block">
